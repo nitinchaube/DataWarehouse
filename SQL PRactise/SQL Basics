@@ -1,0 +1,1026 @@
+-- Active: 1756166148797@@127.0.0.1@1433@master
+Use MyDatabase
+
+
+select * from customers
+
+
+select * from orders
+
+select first_name, country from customers
+
+-- where clause
+select * from customers
+where score >= 900
+
+select * from customers
+where country= 'Germany'
+
+-- using ORDER_BY
+select * from customers ORDER BY score DESC
+
+-- Nested Sorting orderBY
+select * from customers ORDER BY country ASC, score DESC
+
+-- Group BY
+select country, SUM(score) as Total_Scores from customers GROUP BY country
+
+-- find the fotal score and total number of cus for each country.ABORT
+select country, COUNT(id) as number_of_cus, SUM(score) as total_scores from customers GROUP BY country
+
+-- HAVING Clause
+select country, SUM(score) as Total_score from customers GROUP BY country HAVING SUM(score) > 800
+
+-- Distinct
+select DISTINCT country from customers
+
+-- TOP 
+select top 3 * from customers
+
+-- retrieve top 3 with hightest scores
+select top 3 * from customers ORDER BY score DESC
+
+
+--DDL
+
+-- Create a table Persons with id, person_name, birth_date and phone
+create table persons (
+    id INT not NULL,
+    person_name VARCHAR(50) Not NULL,
+    birth_data DATE,
+    phone VARCHAR(15) NOT NULL,
+    CONSTRAINT pk_persons PRIMARY KEY (id)
+)
+
+Alter table persons
+add email VARCHAR(20) not NULL 
+
+-- DROP
+alter table persons
+DROP COLUMN phone
+
+-- drop a table
+drop table persons
+
+
+
+---- DML (Data manipulation language)
+INSERT INTO customers (id, first_name, country, score)
+VALUES (6, 'Nitin', 'India', NULL)
+
+
+select * from customers
+
+-- insert from different table 
+create table persons (
+    id INT not NULL,
+    person_name VARCHAR(50) Not NULL,
+    birth_data DATE,
+    phone VARCHAR(15) NOT NULL,
+    CONSTRAINT pk_persons PRIMARY KEY (id)
+)
+
+insert into persons (id, person_name, birth_data, phone)
+select id, first_name, NULL, 'UNKNOWN' from customers
+
+select * from persons
+
+
+-- UPDATE Command
+UPDATE customers
+set score=0 WHERE id = 6
+
+--DELETEE Command
+delete from customers
+where id>4
+
+
+
+-- Combine tables:
+--1) Raws combines using SET (union, unionall, except, intersect)
+--2) Col combines using JOIN (Ineer, left, outer , right)
+-- Left for all left and matching of right colum.
+-- Inner join: For only the matching of A and B
+-- Full join: For all the data of A and B.
+-- Cross join: takes all data from A and B but consider each data as a separate row so no matchings are involved here.
+use SalesDB
+
+-- Task: Using SalesDB, retrieve a list of all orders, along with the related customer, product, and employee details. For each order, display:
+-- Order ID, customer's name, Product name, Sales, Price, Sales Person's name
+select 
+o.OrderID,
+o.Sales,
+c.FirstName as CustomerFirstName,
+c.LastName as CustomerLastName,
+p.Product as ProductName,
+p.price,
+e.FirstName as EmployeeFirstName,
+e.LastName as EmployeeLastName
+from Sales.Orders as o 
+left JOIN Sales.Customers as c 
+ON o.CustomerID = c.CustomerID
+left JOIN Sales.Products as p 
+ON o.ProductID = p.ProductID
+left JOIN Sales.Employees as e  
+ON o.SalesPersonID = e.EmployeeID
+
+
+--- SET Operation:
+-- UNIOn
+Select CustomerID, LastName from Sales.Customers
+UNION
+Select EmployeeID, LastName from Sales.Employees
+
+-- UNION ALL reterns everything with duplicates. UNION ALL is faster than UNION since it doesn't have to check duplicates.
+
+-- EXCEPT: Takes all data from left and then remove the data that matches with right data. 
+select c.FirstName, c.LastName from Sales.Customers as c
+EXCEPT
+select FirstName, LastName from Sales.Employees 
+
+-- Intersect : Returns only the common values
+
+
+--FUNCTION:
+--A) STING FUNCTIONS
+--1) CONCAT function
+use MyDatabase
+select first_name, country,
+concat (first_name, '-', country) as firstname_country
+from customers
+
+-- 2) UPPER and LOWER Function (transforms the letters to upper or lower case)
+
+-- 3) TRIM
+-- Find customers whose first name contains leading or trailing spaces.
+Select first_name from customers where first_name!=TRIM(first_name)
+
+select 
+first_name, 
+LEN(first_name) len_name, 
+LEN(TRIM(first_name)) len_trim_name,
+LEN(first_name) - LEN(TRIM(first_name)) flag
+from customers
+
+--4) REPLACE
+ SELECT
+ '123-345-567' as phone_number,
+ REPLACE('123-345-567','-','/') as clean_phone_number
+
+ -- 5) START and RIGHT to extract specific chars from a string
+ select LEFT('nitin', 3) as left_values
+
+ -- 6) SUBSTRING (Value, start, length)
+ use MyDatabase
+ select first_name, 
+ SUBSTRING(TRIM(first_name), 2, LEN(first_name)) as substring_from_2nd_char
+ from customers
+
+
+ --B) NUMERIC FUNCTIONS
+
+ ---1) ROUND Function
+ select 3.1564, 
+ ROUND(3.1564, 2),
+ ROUND(3.1564, 1)
+ 
+ ---2) ABS for absolute
+ select -20, ABS(-20)
+
+
+ -- Working with DATES/TIME
+ --A) UNDERSTAING PARTS OF DATes
+ Use SalesDB
+ select OrderID,
+ CreationTime,
+ DATETRUNC(day, Creationtime) as day,
+ DATENAME(MONTH, CreationTime) as Month,
+ DATEPART(year, CreationTime) year_dp,
+ YEAR(CreationTime) as Year,
+ MONTH(CreationTime) as Month  
+ from Sales.Orders
+
+-- show all the orders that were placed during the month of february
+select * from Sales.Orders
+where MONTH(OrderDate) =2
+
+--B) FORMAT and CASTING
+select OrderID, CreationTime,
+FORMAT(CreationTime, 'MM-dd-yyyy') USA_FORMAT
+from Sales.Orders
+
+-- Show Creation time in below format
+-- Day Wed Jan Q1 2025 12:34:56 PM
+Select OrderId, CreationTime,
+'Day '+ FORMAT(CreationTime, 'ddd mmm') +
+' Q'+ DATENAME(QUARTER, CreationTime) + ' ' +
+FORMAT(CreationTime, 'yyyy hh:mm:ss tt') as CustomeFormat
+from Sales.Orders
+
+Select 
+FORMAT(OrderDate, 'MMM yy') OrderDate,
+Count(*)
+from Sales.Orders
+GROUP BY FORMAT(OrderDate, 'MMM yy')
+
+--Convert 
+use SalesDB
+select OrderID, CreationTime,
+CONVERT(VarChar, CreationTime, 32) convertedtovarchar
+from Sales.Orders
+
+-- CAST (to convert into different data type)
+Select 
+cast ('123' as int) as [String to INT]
+
+
+-- NULL Functions
+--1) ISNULL - it check if the value is null then replace it with other value
+--2) COALESCE -- SImilar to ISNULL only we can put more than 2 columns for replacing the value here.
+
+    -- Ex: Find average scores of customer
+    use SalesDB
+    select  CustomerID, Score,
+    AVG(Score) over () AverageScore,
+    AVG(COALESCE(Score, 0)) over () AverageScore2 -- if score is null then replace it with 0 
+    from Sales.Customers
+
+-- CASE Statement
+    -- start with CASE with condition WHEN and ends with END | ELSE can be put inside for default condition
+    -- The data type must be matching (for belo eg. HIGH, MEDIUM and LOW are VARCHAR)
+
+        -- E.G. Create report showing total sales for each of the categories: High (?50), Medium (sels 21 - 50), and low (sales 20 or less). Sort from highest to lowest
+        
+        Use SalesDB
+        Select 
+            Category,
+            SUM(Sales) as TotalSales
+            FROM (
+                Select 
+                    OrderID,
+                    Sales,
+                    CASE
+                        WHEN Sales > 50 THEN 'HIGH'
+                        WHEN Sales > 20 THEN 'MEDIUM'
+                        ELSE 'LOW'
+                    END Category
+                from Sales.Orders
+            ) t
+            GROUP BY Category
+            Order BY TotalSales DESC
+
+    -- Case statement to map values
+    select 
+        EmployeeID,
+        FirstName,
+        LastName,
+        Gender,
+        Case Gender
+            WHEN 'F' THEN '0'
+            WHEN  'M' then '1'
+            ELSE 'Not Available'
+        END Gender1
+    from Sales.Employees
+
+
+
+-- WINDOW Functions (Same as groupby, only difference is that it keeps the result in that row maintaining row wise details)
+    -- find total sales across all orders
+    use SalesDB
+    Select Sum(Sales) TotalSales
+    from Sales.Orders 
+
+    --find total sales for each product
+    select ProductID, sum(Sales) as TotalSales
+    from Sales.Orders GROUP BY ProductID
+
+    --find total sales for each product additionally provide details such orderid and order date
+    select ProductID, OrderID, OrderDate,sum(Sales) as TotalSales
+    from Sales.Orders GROUP BY ProductID, OrderID, OrderDate
+    -- As you can see result of abouve query that it does not give the proper result which is a drawback of aggregate functions to get the details. 
+    -- Now we use OVER() window funciton to get better result and details
+
+    Select OrderID, ProductId, Sum(sales) Over(PARTITION BY ProductID) TotalSales
+    from Sales.Orders
+
+    -- SYNTAX of WINDOW function
+    -- WINDOW_FUNCTION OVER (PARTITION_CLAUSE | ORDER_CLAUSE | FRAME_CLAUSE)
+    -- WINDOW FUNCTIONS: 
+        --1) AGGREGATE FUNCTIONS (COUNT, SUM, AVG, MAX, MIN)
+        --2) RANK FUNCTIONS (ROW_NUMBER, RANK, DENSE_RANK, CUME_DIST, PERCENT_RANK, NTITLE)
+        --3) VALUE FUNCIONS (LEAD, LAG, FIRST_VALUE, LAST_VALUE)
+
+        -- Using Partition BY
+        -- find total sales for each combination of product and order stats        Use SalesDB
+        SELECT
+            OrderID,
+            OrderDate,
+            ProductID,
+            OrderStatus,
+            Sales,
+            sum(Sales) OVER () TotalSales,
+            sum(Sales) OVER (PARTITION BY ProductID) TotalSalesByProducts,
+            sum(Sales) OVER (PARTITION BY ProductID, OrderStatus)
+        From Sales.Orders
+
+        -- RANK WINDOW FUCNTIONS
+        --rank each order based on their sales from highest to lowest by providing details such as order id and order date
+        Use SalesDB
+        SELECT
+            OrderID,
+            OrderDate,
+            Sales,
+            RANK() Over(ORDER BY Sales DESC) RankedSales
+        from Sales.Orders
+
+        -- FRAME WINDOW Functions (for subset of data inside each window by specifiying the boundary using unbounded, proceding, following, etc)
+        SELECT
+            OrderID,
+            OrderDate,
+            OrderStatus,
+            Sales,
+            SUM(Sales) OVER (PARTITION BY OrderStatus ORDER BY OrderDate
+            ROWS BETWEEN CURRENT row and 2 FOLLOWING) total_sales
+        from Sales.Orders
+
+        -- rank customers based on sales
+        SELECT
+            CustomerID,
+            Sum(Sales) TotalSales,
+            RANK() over(ORDER BY Sum(Sales) DESC) RankCustomers
+        from Sales.Orders
+        GROUP BY CustomerID
+
+        -- PRACTISE
+            --1) Count the total number of orders for each product
+            Use SalesDB
+            select ProductID, count(ProductID) over (PARTITION BY ProductID)
+            from Sales.Orders
+
+            --2) Check whether the table 'orders' contains any duplicate rows
+            
+            select * from (
+                select OrderID, Count(*) over (PARTITION BY OrderID) checkPK
+                from Sales.OrdersArchive
+            )t where checkPK > 1
+
+            --3) find the average sales for each product
+            select ProductID, Sales, AVG(Sales) over () AvgSales, AVG(COALESCE(Sales, 0)) over (PARTITION BY ProductID) AverageOfSalesByProducts
+            from Sales.Orders
+           
+            --4) Find all orders where sales are higher thatn the average sales across all orders
+            Select *
+            from (
+                Select 
+                    OrderID,
+                    ProductID,
+                    Sales,
+                    AVG(Sales) Over () AverageSales
+                from Sales.Orders
+            )t where Sales > AverageSales
+
+            --5) Find the highest and lowest sales across all orders and find the same for each product by providing additional details such as Order ID, PRoduct ID
+            Select
+                OrderID,
+                ProductID,
+                Sales,
+                MIN(Sales) over() lowestSalesALL,
+                MAX(Sales) over() HighestSalesALL,
+                MIN(Sales) over(PARTITION BY ProductID) lowestSameProductSales,
+                MAX(Sales) over(PARTITION BY ProductID) hightstSameProductSales
+            from Sales.Orders
+
+            --6) Show the employees having highest Salary
+            Select * from (
+                SELECT EmployeeID, FirstName, LastName, Salary,
+                Max(Salary) over() MaxSalary
+                from Sales.Employees
+            )t where Salary = MaxSalary
+
+            --7) Find the deviation of each sales from the minimum and maximum sales amounts
+            Select
+                OrderID,
+                ProductID,
+                Sales,
+                MIN(Sales) over() lowestSalesALL,
+                MAX(Sales) over() HighestSalesALL,
+                Sales - MIN(Sales) over() deviationFromMin,
+                MAX(Sales) over() - Sales   deviationFromMAX
+            from Sales.Orders
+
+        -- RUNNING and ROLLING total: Running will give all the total whereas rolling will aggregate all values within a fixed time window. 
+            -- 8) calculate the moving average of sales for each product over time. 
+
+            use SalesDB
+            SELECT
+                OrderID, ProductID, OrderDate, Sales,
+                AVG(Sales) over (PARTITION BY ProductID) avgbyProduct,
+                AVG(Sales) over (PARTITION BY ProductID ORDER BY OrderDate) movineAVG
+            from Sales.Orders
+
+
+    -- Value Functions to get values 
+        -- 1) LAG() --> To get the previous row within a window
+        -- 2) LEAD() --> To get the next row within a window 
+        -- 3) FIRST_VALUE() --> To get the first row
+        -- 4) LAST_VALUE() --> To get the last value
+
+    -- Rules:
+        -- 1) Expression --> Any data type
+        -- 2) ORDER BY --- required
+        -- 3) FRAME - Optional
+
+    -- Use Cases:
+        -- 1) Time Series Analysis: MOM or YoY
+        -- 2) Time Gaps Analysis: Customer Retention
+        -- 3) Comparison Analysis: Extream ie.e lowest or highest
+
+        --PRACTISE:
+        --1) Analyz the month over month performance by finding the percentage change in sales between current and previous month
+        Use SalesDB
+        SELECT *,
+        CurrentMonthSales - PreviousMonthSales as MOM_Change
+        from (
+            SELECT
+                MONTH(OrderDate) OrderMonth,
+                Sum(Sales) CurrentMonthSales,
+                LAG(SUM(Sales)) OVER (ORDER BY MONTH(OrderDate)) PreviousMonthSales
+            FROM Sales.Orders
+            GROUP BY MONTH(OrderDate)
+        )t
+            
+        
+--- ADVANCED SQL 
+ -- There are many team that calls to database and because of which the batabase breaks or starts having performance issues or Security issues
+ -- To solve these challenges we use
+    --1) Subquery 2) CTE (common table expression) 3) Views 4) Temporary Tables 5) CTAS - Create Table As Select
+
+
+     
+    -- A) Databse Architecture
+            --1 ) META DATA (INFORMATION SCHEMA)
+            -- INFORMATION Schema: A system-defined schema with build in views that provide info about the database, like tables and columns.
+                Select * from INFORMATION_SCHEMA.COLUMNS --- TO GET THE META DATA
+
+            --2) TEMPORARY TABLES (UNDER System Database/tempdb in local)
+
+            --3) How simple query works? 
+                -- ANS: Data engineer query something then it first check the cache then temp tables and if not then form actual memory data
+
+            --4) SUBQUERY: Query inside main query. 
+                -- e.g: Find the products that have a price higher than the average price of all products:
+                    --mainquery
+                    use SalesDB
+                    Select * FROM
+                        --subquery
+                        (SELECT ProductID, Price, AVG(Price) OVER() AvgPrice
+                        from Sales.Products) t
+                    WHERE Price > AvgPrice 
+
+                -- e.g. Rank customers based on total amount of sales:
+                    Select *,
+                    RANK() OVER(ORDER BY TotalSales DESC) Ranking
+                    FROM
+                    --subquery
+                        (
+                            Select 
+                            CustomerID, 
+                            SUM(Sales) TotalSales
+                            from Sales.Orders GROUP BY CustomerID
+                        ) t
+
+                -- Subquery in JOINS e.g. Show all customer details and find the total orders of each customer
+                    Select *
+                    from Sales.Customers c
+                    LEFT JOIN(
+                        select COUNT(*) TotalOrders, CustomerID
+                        from Sales.Orders GROUP BY CustomerID
+                    )o 
+                    ON c.CustomerID = o.CustomerID
+
+                -- Subquery in Where Clause
+                --e.g. Find the products that have a price higher than the average price of all products
+                    Select 
+                        ProductID, Price
+                    from Sales.Products
+                    WHERE price > (
+                        select AVG(Price) 
+                        from Sales.Products
+                    )
+
+                -- ** Dependancy between subquery and main query 
+                -- 1) Non-correlated (doesn't depend on main query) -- examples like above subqueries
+                -- 2) COrrelated (depends on main query) - executed for each row
+                        --e.g Show all customer details and find the total orders of each customer
+                        SELECT *, (Select Count(*) from Sales.Orders o where o.CustomerID = c.CustomerID) TotalSales
+                        from Sales.Customers c
+
+                
+            --5) CTE (Common Table Expression) - Temporary, named result set (virtual table), that can be used multiple times within your query to simplify and organize complex query. 
+                -- JOIN --> Agg  --> Agg
+                        -----------^
+                    -- Cannot use orderby in cte
+
+                    -- Eg: Find the total sales per customers
+                    use salesdb;
+                    with CTE_Total_Sales AS
+                    (
+                        SELECT customerID, SUM(Sales) as TotalSales
+                        from sales.Orders
+                        GROUP BY customerID
+                    )
+                    SELECT
+                        c.CustomerID, c.FirstName, c.LastName, cts.TotalSales
+                    FROM Sales.Customers c
+                    LEFT JOIN CTE_Total_Sales cts 
+                    ON cts.CustomerID = c.CustomerID
+            -- 1) NON-RECURSIVE CTE
+             --A) Multiple standalone CTE's
+                -- E.g: Find the total sales per customer
+                    with CTE_Total_Sales AS
+                    (
+                        SELECT customerID, SUM(Sales) as TotalSales
+                        from sales.Orders
+                        GROUP BY customerID
+                    )
+                    --find the last order date for each customer
+                    , CTE_last_order as(
+                        SELECT CustomerID, MAX(OrderDate) as LastOrder
+                        from Sales.Orders
+                        GROUP BY CustomerID
+                    )
+                    SELECT
+                        c.CustomerID, c.FirstName, c.LastName, cts.TotalSales, clo.LastOrder
+                    FROM Sales.Customers c
+                    LEFT JOIN CTE_Total_Sales cts 
+                    ON cts.CustomerID = c.CustomerID
+                    LEFT JOIN CTE_last_order clo ON clo.CustomerID = c.CustomerID
+                
+            -- B) Nested CTE
+
+                    --: Find the total sales per customer
+                    use SalesDB;
+                    with CTE_Total_Sales AS
+                    (
+                        SELECT customerID, SUM(Sales) as TotalSales
+                        from sales.Orders
+                        GROUP BY customerID
+                    )
+                    --find the last order date for each customer
+                    , CTE_last_order as(
+                        SELECT CustomerID, MAX(OrderDate) as LastOrder
+                        from Sales.Orders
+                        GROUP BY CustomerID
+                    )
+                    -- rank customers based on total sales
+                    , CTE_Customer_rank as (
+                        select CustomerID, TotalSales, RANK() OVER (ORDER BY TotalSales DESC) as CustomerRank
+                        from CTE_Total_Sales --- USing above CTE
+                    )
+                    -- segment the customers based on their total sales
+                    , CTE_Customer_based as (
+                        SELECT
+                            CustomerID,
+                            Case WHEN TotalSales > 100 THEN 'HIGH'
+                                 WHEN TotalSales > 80 THEN 'Medium'
+                                 ELSE 'LOW'
+                            END CustomerSegments
+                        FROM CTE_Total_Sales -- Usign above CTE 
+                    )
+                    SELECT
+                        c.CustomerID, c.FirstName, c.LastName, cts.TotalSales, clo.LastOrder, ccr.CustomerRank, ccb.CustomerSegments
+                    FROM Sales.Customers c
+                    LEFT JOIN CTE_Total_Sales cts 
+                    ON cts.CustomerID = c.CustomerID
+                    LEFT JOIN CTE_last_order clo 
+                    ON clo.CustomerID = c.CustomerID
+                    LEFT JOIN CTE_Customer_rank ccr
+                    on ccr.CustomerID = c.CustomerID
+                    LEFT JOIN CTE_Customer_based ccb
+                    on ccb.CustomerID = c.CustomerID
+            
+          -- 2) RECURSIVE CTE
+                -- e.g. Generate a sequence of numbers from 1 to 20
+                with series as (
+                    -- anchor query
+                    select 1 as myNumber
+                    UNION ALL
+                    -- Recursive Query
+                    SELECT
+                    myNumber + 1
+                    from Series
+                    where myNumber < 20
+                )
+                --Main Query
+                Select *
+                from series 
+                OPTION (MAXRECURSION 100)
+
+                -- E.g 2) Show the employee hierarchy by displaying each employee's level within the order
+
+
+                use Salesdb;
+                with CTE_Employee_hierarchy as (
+                    --Anchor query
+                    SELECT
+                        EmployeeID,
+                        FirstName,
+                        ManagerID,
+                        1 as Level
+                    from Sales.Employees
+                    where ManagerID is NULL
+                    UNION ALL
+                    --recursive query
+                    SELECT
+                        e.EmployeeID,
+                        e.FirstName,
+                        e.ManagerID,
+                        Level + 1
+                    from Sales.Employees as e
+                    INNER JOIN CTE_Employee_hierarchy ceh
+                    on e.ManagerID = ceh.EmployeeID
+
+                )
+                -- main query
+                Select * from CTE_Employee_hierarchy;
+
+        
+    -- THREE LEVEL ARCHITECTURE OF DB
+    -- 1) PHYSICAL LEVEL - (datafiles, logs, catalogs, Partitions, caches, blocks ,etc)
+    -- 2) LOGICAL LEVEL - (focus on how to structure the data) (table, views, relationships, indexes, procedures, funct, etc)
+    -- 3) VIEW LEVEL 
+                -- Views are highest level of abstractions and multiple view can be created for different department to see the db instead of going through tables ,etc
+                -- Focus of this layer is to make consumer easy to consume the db 
+                -- Store central, complex query logic in the database for access by multiple queries, reducing project complexity.
+
+                -- VIEWS:
+                -- E.g. Find the running total of sales for each month.
+                    use SalesDB;
+
+                    -- CREATE A VIEW
+                    CREATE View V_monthlySummary as (
+                        select
+                        DATETRUNC(month, OrderDate) OrderMonth,
+                        SUM(Sales) TotalSales,
+                        COUNT(OrderID) TotatOrders,
+                        SUM(Quantity) TotalQuantities
+                        FROM Sales.Orders
+                        GROUP BY DATETRUNC(month, OrderDate)
+                    );
+                    -- USE A VIEW
+                    SELECT
+                        *
+                    from V_monthlySummary
+
+                    Select 
+                        OrderMonth,
+                        SUM(TotalSales) Over (Order BY OrderMonth) as RunningTotal
+                    from V_monthlySummary;
+
+                    --DROP THE VIEW
+                    DROP View V_monthlySummary;
+    
+
+        -- 6) CTAS (Create table as Select) -- its similar to VIEW just here we create table unlike view query the same table. 
+
+                -- Task: CReate a montly order ctas
+                use salesdb
+                SELECT
+                    DATENAME(month, OrderDate) OrderMonth,
+                    COUNT(OrderID) TotalOrders
+                INTO Sales.MonthlyOrders --creates a ctas TABLE
+                From Sales.Orders
+                GROUP BY DATENAME(month, OrderDate)
+
+                --if you want to refresh the table to fetch the updated content from original table then drop the ctas table and create it again like below:
+                if OBJECT_ID('Sales.MonthlyOrders','U')
+                    DROP TABLE Sales.MonthlyOrders
+                GO
+                SELECT
+                    DATENAME(month, OrderDate) OrderMonth,
+                    COUNT(OrderID) TotalOrders
+                INTO Sales.MonthlyOrders --creates a ctas TABLE
+                From Sales.Orders
+                GROUP BY DATENAME(month, OrderDate)
+
+                -- USE CASE OF CTAS:
+                -- 1) Create a persistant snapshot 
+                -- 2) create a data mart (physical layer)
+                -- 3) CTAS are permanent tables (for temp tables use # infrom of tabelname like INTO #Sales.MonthlyORders while creating)
+
+        
+        --7) Store Procedures : Instead of writing and updating queries again and again, you write queries and store them as a store procedure in executing manner on the server side. After running 
+                                -- the sp, all queries will executed in a mentioned order which reduces human error.
+                
+                -- TasK create a SP for US Customers to find the total number of customers and the average score::
+                use salesdb;
+                CREATE Procedure GetCustomerSummary AS
+                BEGIN
+                    SELECT
+                        Count(*) TotalCustomers,
+                        AVG(Score) AverageScore
+                    from Sales.Customers
+                    where Country='USA'
+                END
+
+                EXEC GetCustomerSummary
+
+            -- PARAMETERS in SP using @
+                ALTER Procedure GetCustomerSummary @Country NVARCHAR(50) = 'USA' AS
+                BEGIN
+                    SELECT
+                        Count(*) TotalCustomers,
+                        AVG(Score) AverageScore
+                    from Sales.Customers
+                    where Country=@Country
+                END
+
+                EXEC GetCustomerSummary @Country = 'Germany'
+                
+                EXEC GetCustomerSummary @Country = 'USA'
+
+            -- Variables 
+
+                ALTER Procedure GetCustomerSummary @Country NVARCHAR(50) = 'USA' AS
+                BEGIN
+                    DECLARE @TotalCustomers INT, @AvgScore FLOAT;
+                    SELECT
+                        @TotalCustomers = Count(*) ,
+                        @AvgScore =  AVG(Score)
+                    from Sales.Customers
+                    where Country = @Country
+
+                    PRINT 'Total Customers From ' + @Country + ':' + CAST(@TotalCustomers AS NVARCHAR)
+                    PRINT 'Average Score from ' + @Country + ':' + CAST(@AvgScore AS NVARCHAR)
+                END
+                EXEC GetCustomerSummary @Country = 'Germany';
+                
+                EXEC GetCustomerSummary @Country = 'USA'
+
+            -- CONDITION (IF ELSE)
+
+                ALTER Procedure GetCustomerSummary @Country NVARCHAR(50) = 'USA' AS
+                BEGIN
+                    DECLARE @TotalCustomers INT, @AvgScore FLOAT;
+
+                    --Data Cleaning
+
+                    IF EXISTS (Select 1 from Sales.Customers WHERE Score is NULL AND Country = @Country)
+                    BEGIN
+                        PRINT('Updating Null Scores to 0')
+                        UPDATE Sales.Customers
+                        SET Score = 0
+                        WHERE Score is NULL and Country = @Country;
+                    END
+                    ELSE
+                    BEGIN
+                        PRINT('NO Null Scores Found')
+                    END
+
+                    SELECT
+                        @TotalCustomers = Count(*) ,
+                        @AvgScore =  AVG(Score)
+                    from Sales.Customers
+                    where Country = @Country
+
+                    PRINT 'Total Customers From ' + @Country + ':' + CAST(@TotalCustomers AS NVARCHAR)
+                    PRINT 'Average Score from ' + @Country + ':' + CAST(@AvgScore AS NVARCHAR)
+                END
+
+                EXEC GetCustomerSummary @Country = 'Germany';
+
+            -- ERROR HANDLING
+
+                ALTER Procedure GetCustomerSummary @Country NVARCHAR(50) = 'USA' AS
+                BEGIN
+                    BEGIN TRY
+                        DECLARE @TotalCustomers INT, @AvgScore FLOAT;
+
+                        --Data Cleaning
+
+                        IF EXISTS (Select 1 from Sales.Customers WHERE Score is NULL AND Country = @Country)
+                        BEGIN
+                            PRINT('Updating Null Scores to 0')
+                            UPDATE Sales.Customers
+                            SET Score = 0
+                            WHERE Score is NULL and Country = @Country;
+                        END
+                        ELSE
+                        BEGIN
+                            PRINT('NO Null Scores Found')
+                        END
+
+                        SELECT
+                            @TotalCustomers = Count(*) ,
+                            @AvgScore =  AVG(Score),
+                        
+                        from Sales.Customers
+                        where Country = @Country
+
+                        PRINT 'Total Customers From ' + @Country + ':' + CAST(@TotalCustomers AS NVARCHAR)
+                        PRINT 'Average Score from ' + @Country + ':' + CAST(@AvgScore AS NVARCHAR)
+                    END TRY
+                    BEGIN CATCH
+                        print('AN ERROR Occured')
+                        print('Error Message: ' + ERROR_MESSAGE())
+                        print('ERROR Number: ' + CAST(ERROR_NUMBER() as NVARCHAR));
+                        print('ERROR LINE: ' + CAST(ERROR_LINE() AS NVARCHAR));
+                    END CATCH
+                END
+
+
+
+-- creating one normal logs table
+use Salesdb
+
+CREATE TABLE Sales.EmployeeLogs (
+    LogID INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeID INT,
+    LogMessage VARCHAR(255),
+    LogDate DATE
+)
+
+            --8) TRIGGERS
+
+                    -- a) DML TRIGGERS (INSERT, UPDATE, DELETE)
+                            -- creating insert triggers
+                            CREATE TRIGGER trg_AfterInsertEmployee ON Sales.Employees
+                            AFTER INSERT
+                            AS
+                            BEGIN
+                                INSERT INTO Sales.EmployeeLogs (EmployeeID, LogMessage, LogDate)
+                                SELECT
+                                    EmployeeID,
+                                    'New Employee Added = ' + CAST(EmployeeID AS VARCHAR),
+                                    GETDATE() 
+                                FROM INSERTED
+                            END
+
+                            -- Adding data in employee table to trigeer the above trigger
+                            Select * from Sales.EmployeeLogs
+
+                            INSERT INTO Sales.Employees
+                            VALUES
+                            (6, 'Maria', 'Doe', 'HR', ' 1988-01-12', 'F', 80000, 3)
+                            
+
+                    -- b) DDL TRIGGERS (CREATE, ALTER, DROP)
+                    -- c) LOGGON
+
+            
+            --9) INDEXES
+
+                    --a) Structure 
+                            --i) Cluster indexes - pages in db are stored in B-tree in sorted order to get the needed row easitly. INDEX_PAGE --> INDEX_PAGE(since everything is sorted) --> DATA PAGE
+                            --ii) Non-cluster indexes - an index page is build wehre for each row id its location is stored (the page number, the offset number, etc) INDEX_PAGE --> INDEX_PAGE -->INDEX_PAGE(locations) --> DATA PAGE
+                                use SalesDB;
+                                CREATE CLUSTERED INDEX idx_customer_ID ON Sales.Customers (CustomerID);
+                                CREATE NONCLUSTERED INDEX idx_customer_name ON Sales.Customers (FirstName)
+
+
+                    --b) Storage
+                            --i) RowStore Indexes -- Data are stored as it is and so the indexes. -- GODD for OLTP -- less efficient in storage, normal speed read and write
+                            --ii) Column Store Indexes 
+                                    -- Indexes are made by compressing the rows and every column are stored as a row in large object format.    
+                                    -- Along with original tables there will be a column store indexes that will be made with each column stored as a one hot vector for each value in a row.
+                                    -- very highly efficient for storage with compression
+                                    -- Fast read but slow write
+                                    -- Good for OLAP
+                                    CREATE NONCLUSTERED COLUMNSTORE INDEX idx_customer_ID ON Sales.Customers (CustomerID);
+                            
+                        DROP INDEX idx_customer_ID on Sales.Customers;
+
+
+
+                    --c) Functions
+                    use SalesDB;
+                            --i) Unique Indexes - Ensures no duplicate values exis in specific column. (make index unique for a column whose datas are unique e.g. primaray key)
+                                                -- Reading fast but writing slow.
+                                            SELECT * from Sales.Products
+
+                                            -- create unique index for Products
+                                            CREATE UNIQUE NONCLUSTERED INDEX idx_Products_product
+                                            ON Sales.Products (Product)
+
+                            --ii) Filtered Indexes -- when some filter is necessary in every calling we can index the data using filer index
+                                            Create NONCLUSTERED INDEX idx_customers_country_filtered
+                                            on Sales.Customers (Country)
+                                            where Country = 'USA'
+
+
+                -- WHEN TO USE WHICH INDEX
+                    -- 1) Fast INSERT --> HEAP (Default index)
+                    -- 2) For Primary Keys or date columns --> CLUSTERED INDEX (OLTP)
+                    -- 3)  For Analytical Queries --> Column Store index (OLAP)
+                    -- 4) For non-primary key coloumns (foreign keys, joins, filters) --> Non-Clustered index
+                    -- 5) Target subset of data or to reduce size of index --> Filtered INDEX
+                    -- 6) Enforce Uniqueness or improve query speed --> UNIQUE INDEX
+
+                -- MANAGING INDEXES
+                    -- 1) To list all indexes on specific table
+                            sp_helpindex 'Sales.Customers'
+                    --2) TO monitor index usage
+                            
+                            select * from sys.indexes;  -- to find all index stats
+
+                            select * from sys.dm_db_index_usage_stats -- to find more stats
+
+                            select * from sys.dm_db_missing_index_details -- some missing indexes
+                    
+                    -- 3) Update Statistics of DB
+
+                    --4) MOnitor fragmentation
+                        select * from sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'LIMITED') -- check the avg_fragmentation column in the indexes.
+                        -- if avg fragmentation is <10% then No action needed,
+                        -- 10 to 30% then Reorganize
+                        -- >30%  then Rebuild. 
+
+                            --a) Reorganize : Defragments leaf nodes to keep them sorted; light operation
+                                ALTER INDEX idx_customers_country_filtered ON Sales.Customers REORGANIZE
+
+                            --b) Rebuild: Recreated Index from Scratch; "Heavy" Operation. 
+                                ALTER INDEX idx_customers_country_filtered ON Sales.Customers REBUILD
+
+                
+                
+
+                    
+
+
+
+                    
+
+
+
+
+
+
+
+
+
+
+                
+
+
+                
+
+
+
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+                 
+                    
+                
+
+
+
+
+                
+
+
+                    
+
+                
+
+            
+
+
+
+
+                 
+
+
+                        
+
+
+
+ 
+    
+
+
